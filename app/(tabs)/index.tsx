@@ -1,98 +1,223 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+import { Link, Stack } from 'expo-router';
+import React from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { useTransactions } from '../../context/TransactionContext'; // ✅ Import Context
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+// Komponen ContactItem (tidak berubah)
+interface ContactItemProps {
+  name: string;
+  status: string;
+  statusColor: string;
+}
+const ContactItem: React.FC<ContactItemProps> = ({ name, status, statusColor }) => (
+  <View style={styles.contactItem}>
+    <View style={styles.contactIconContainer}>
+      <FontAwesome name="user" size={24} color="#4f46e5" />
+    </View>
+    <View style={styles.contactTextContainer}>
+      <Text style={styles.contactName}>{name}</Text>
+      <Text style={[styles.contactStatus, { color: statusColor }]}>{status}</Text>
+    </View>
+  </View>
+);
 
-export default function HomeScreen() {
+export default function DashboardScreen(): JSX.Element {
+  const { transactions, totalOwe, totalReceive } = useTransactions(); // ✅ Ambil data dari context
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
+      <Stack.Screen options={{ headerShown: false }} />
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>Manajer Utang</Text>
+        <Text style={styles.headerSubtitle}>Lacak utang dan piutang Anda</Text>
+      </View>
+
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+        {/* Ringkasan Total */}
+        <View style={styles.summaryCardContainer}>
+          <View style={[styles.summaryCard, styles.payCard]}>
+            <Text style={styles.summaryCardTitle}>Anda Bayar</Text>
+            <Text style={styles.summaryCardAmount}>Rp {totalOwe.toLocaleString('id-ID')}</Text>
+          </View>
+          <View style={[styles.summaryCard, styles.receiveCard]}>
+            <Text style={styles.summaryCardTitle}>Anda Terima</Text>
+            <Text style={styles.summaryCardAmount}>Rp {totalReceive.toLocaleString('id-ID')}</Text>
+          </View>
+        </View>
+
+        {/* Daftar Transaksi Terbaru */}
+        <View style={styles.recentContactsSection}>
+          <Text style={styles.recentContactsTitle}>Transaksi Terbaru</Text>
+          <View style={styles.contactList}>
+            {transactions.map((tx) => (
+              <ContactItem
+                key={tx.id}
+                name={tx.contactName}
+                status={
+                  tx.type === 'owe'
+                    ? `Anda berutang Rp ${tx.amount.toLocaleString('id-ID')}`
+                    : `Berutang pada Anda Rp ${tx.amount.toLocaleString('id-ID')}`
+                }
+                statusColor={tx.type === 'owe' ? '#ef4444' : '#22c55e'}
+              />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Tombol Tambah */}
+      <Link href="/addTransaction" asChild>
+        <TouchableOpacity style={styles.fab} activeOpacity={0.7}>
+          <FontAwesome name="plus" size={24} color="white" />
+        </TouchableOpacity>
+      </Link>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f9fafb', // abu muda lembut
+  },
+
+  // HEADER
+  headerContainer: {
+    backgroundColor: '#2563eb', // biru terang seperti di gambar
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#e0e7ff',
+    marginTop: 4,
+  },
+
+  // SCROLL AREA
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+
+  // SUMMARY CARDS
+  summaryCardContainer: {
+    marginBottom: 24,
+    gap: 12,
+  },
+  summaryCard: {
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  payCard: {
+    backgroundColor: '#ef4444', // merah
+  },
+  receiveCard: {
+    backgroundColor: '#22c55e', // hijau
+  },
+  summaryCardTitle: {
+    color: '#fff',
+    fontSize: 14,
+    opacity: 0.9,
+  },
+  summaryCardAmount: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+
+  // RECENT CONTACTS
+  recentContactsSection: {
+    marginTop: 4,
+  },
+  recentContactsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  contactList: {
+    gap: 12,
+  },
+  contactItem: {
+    backgroundColor: '#ffffff',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    padding: 14,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  contactIconContainer: {
+    backgroundColor: '#e0e7ff', // ungu muda
+    padding: 10,
+    borderRadius: 999,
+    marginRight: 14,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  contactTextContainer: {
+    flex: 1,
+  },
+  contactName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  contactStatus: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+
+  // FLOATING BUTTON
+  fab: {
     position: 'absolute',
+    bottom: 90,
+    right: 24,
+    backgroundColor: '#2563eb',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
 });
