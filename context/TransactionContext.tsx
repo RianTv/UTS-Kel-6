@@ -19,6 +19,7 @@ interface TransactionContextType {
   addTransaction: (tx: NewTransactionInput) => void;
   totalOwe: number;
   totalReceive: number;
+  deleteTransaction: (id: string) => void; // ✅ Tambahan fungsi delete
 }
 
 // 3. Membuat Konteks
@@ -50,6 +51,11 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
     setTransactions(prevTransactions => [newTransaction, ...prevTransactions]);
   };
 
+  // ✅ [FUNGSI TAMBAHAN] Hapus transaksi berdasarkan ID
+  const deleteTransaction = (id: string) => {
+    setTransactions(prevTransactions => prevTransactions.filter(tx => tx.id !== id));
+  };
+
   // [MEMO] Menghitung total utang (owe) dan piutang (receive)
   const { totalOwe, totalReceive } = useMemo(() => {
     return transactions.reduce((acc, tx) => {
@@ -66,6 +72,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
   const value = {
     transactions,
     addTransaction,
+    deleteTransaction, // ✅ Tambahan ke context
     totalOwe,
     totalReceive,
   };

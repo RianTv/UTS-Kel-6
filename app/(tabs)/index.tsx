@@ -10,15 +10,18 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { useTransactions } from '../../context/TransactionContext'; // ✅ Import Context
+import { useTransactions } from '../../context/TransactionContext';
 
-// Komponen ContactItem (tidak berubah)
+// Komponen ContactItem
 interface ContactItemProps {
+  id: string;
   name: string;
   status: string;
   statusColor: string;
+  onDelete: (id: string) => void;
 }
-const ContactItem: React.FC<ContactItemProps> = ({ name, status, statusColor }) => (
+
+const ContactItem: React.FC<ContactItemProps> = ({ id, name, status, statusColor, onDelete }) => (
   <View style={styles.contactItem}>
     <View style={styles.contactIconContainer}>
       <FontAwesome name="user" size={24} color="#4f46e5" />
@@ -27,25 +30,28 @@ const ContactItem: React.FC<ContactItemProps> = ({ name, status, statusColor }) 
       <Text style={styles.contactName}>{name}</Text>
       <Text style={[styles.contactStatus, { color: statusColor }]}>{status}</Text>
     </View>
+
+    {/* Tombol Delete */}
+    <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
+      <FontAwesome name="trash" size={20} color="#ef4444" />
+    </TouchableOpacity>
   </View>
 );
 
 export default function DashboardScreen(): JSX.Element {
-  const { transactions, totalOwe, totalReceive } = useTransactions(); // ✅ Ambil data dari context
+  const { transactions, totalOwe, totalReceive, deleteTransaction } = useTransactions();
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#3b82f6" />
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Header */}
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Manajer Utang</Text>
         <Text style={styles.headerSubtitle}>Lacak utang dan piutang Anda</Text>
       </View>
 
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-        {/* Ringkasan Total */}
         <View style={styles.summaryCardContainer}>
           <View style={[styles.summaryCard, styles.payCard]}>
             <Text style={styles.summaryCardTitle}>Anda Bayar</Text>
@@ -57,13 +63,13 @@ export default function DashboardScreen(): JSX.Element {
           </View>
         </View>
 
-        {/* Daftar Transaksi Terbaru */}
         <View style={styles.recentContactsSection}>
           <Text style={styles.recentContactsTitle}>Transaksi Terbaru</Text>
           <View style={styles.contactList}>
             {transactions.map((tx) => (
               <ContactItem
                 key={tx.id}
+                id={tx.id}
                 name={tx.contactName}
                 status={
                   tx.type === 'owe'
@@ -71,13 +77,13 @@ export default function DashboardScreen(): JSX.Element {
                     : `Berutang pada Anda Rp ${tx.amount.toLocaleString('id-ID')}`
                 }
                 statusColor={tx.type === 'owe' ? '#ef4444' : '#22c55e'}
+                onDelete={deleteTransaction}
               />
             ))}
           </View>
         </View>
       </ScrollView>
 
-      {/* Tombol Tambah */}
       <Link href="/addTransaction" asChild>
         <TouchableOpacity style={styles.fab} activeOpacity={0.7}>
           <FontAwesome name="plus" size={24} color="white" />
@@ -90,12 +96,10 @@ export default function DashboardScreen(): JSX.Element {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f9fafb', // abu muda lembut
+    backgroundColor: '#f9fafb',
   },
-
-  // HEADER
   headerContainer: {
-    backgroundColor: '#2563eb', // biru terang seperti di gambar
+    backgroundColor: '#2563eb',
     paddingHorizontal: 24,
     paddingTop: 40,
     paddingBottom: 24,
@@ -116,8 +120,6 @@ const styles = StyleSheet.create({
     color: '#e0e7ff',
     marginTop: 4,
   },
-
-  // SCROLL AREA
   scrollContainer: {
     flex: 1,
   },
@@ -125,8 +127,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 100,
   },
-
-  // SUMMARY CARDS
   summaryCardContainer: {
     marginBottom: 24,
     gap: 12,
@@ -142,10 +142,10 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   payCard: {
-    backgroundColor: '#ef4444', // merah
+    backgroundColor: '#ef4444',
   },
   receiveCard: {
-    backgroundColor: '#22c55e', // hijau
+    backgroundColor: '#22c55e',
   },
   summaryCardTitle: {
     color: '#fff',
@@ -158,8 +158,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 4,
   },
-
-  // RECENT CONTACTS
   recentContactsSection: {
     marginTop: 4,
   },
@@ -176,6 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 14,
     borderRadius: 10,
     shadowColor: '#000',
@@ -185,7 +184,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   contactIconContainer: {
-    backgroundColor: '#e0e7ff', // ungu muda
+    backgroundColor: '#e0e7ff',
     padding: 10,
     borderRadius: 999,
     marginRight: 14,
@@ -202,8 +201,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 2,
   },
-
-  // FLOATING BUTTON
+  deleteButton: {
+    padding: 8,
+  },
   fab: {
     position: 'absolute',
     bottom: 90,
